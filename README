@@ -1,0 +1,55 @@
+ltokenp is a token processor for Lua: it allows you to process the stream
+of tokens coming from the Lua lexer.
+
+Potential uses of ltokenp include:
+- Compressing Lua programs by removing comments and whitespace (strip.lua)
+- Removing assertions (assert.lua)
+- Adding new syntax sugar (self.lua)
+- Experimenting with new syntax without hacking the Lua source (reserved.lua)
+See also a sample skeleton in skel.lua.
+
+ltokenp accepts Lua scripts to run and Lua files to process.
+Scripts are run and files are processed as seen.
+Each script appears as a separate argument after '-s', one '-s' per script.
+
+Typical usage is
+	ltokenp -s script.lua [file.lua ...]
+but you can also do
+	ltokenp -s s1.lua f1.lua -s s2.lua f2.lua
+
+Scripts should define a global function FILTER to process the token stream.
+	function FILTER(line,token,text,value) ... end
+The arguments are:
+- the line number where the token appears
+- the token as a number
+- the token as text
+- the value of names, numbers, and strings; for other tokens,
+  the value is the same as the text.
+
+If no scripts are given, ltokenp just dumps the token stream with this:
+	function FILTER(line,token,text,value)
+		print(line,token,text,value)
+	end
+which is useful for debugging.
+
+Scripts typically output the contents of the files with some modifications.
+Unfortunately, all comments and whitespace are eaten by the lexer and never
+reach the token stream.
+
+ltokenp is actually a full-featured non-interactive Lua interpreter.
+You can run ordinary Lua programs with ltokenp -s foo.lua.
+
+To build ltokenp and run a simple test, just do make.
+
+To install ltokenp where you can find it, use a variant of these:
+	make install
+	sudo make install
+	sudo make install INSTALL_DIR=/usr/local/bin
+
+ltokenp uses the latest release of Lua. If you prefer a different release,
+set it in mksrc, run mksrc, and rebuild ltokenp.
+
+This code is hereby placed in the public domain and also under the MIT license.
+The Lua code in src/ is under the MIT license. See src/lua.h.
+
+Please send comments, suggestions, and bug reports to lhf@tecgraf.puc-rio.br .

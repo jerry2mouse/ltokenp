@@ -1,0 +1,27 @@
+#!/bin/sh
+
+V=$1
+V=5.1.5
+V=5.2.4
+V=5.3.5
+V=5.4.6
+
+L=lua-$V
+
+rm -fr $L src
+curl http://www.lua.org/ftp/$L.tar.gz | tar zxf - $L/src
+
+mv $L/src .
+rm src/lua.c src/luac.c src/lua.hpp
+rmdir $L
+
+ed << EOF src/llex.c
+/void luaX_next/
+i
+#include "proxy.c"
+.
+w
+q
+EOF
+
+echo ">>> patched src based on Lua $V"
