@@ -1,10 +1,10 @@
 local lualibname = "lua54"
 local luacname = "luac"
 local sln_name = "ltokenp"
-local obj_path =  "../build/obj/%{wks.name}/%{prj.name}/%{cfg.platform}/%{cfg.buildcfg}"
 
+local obj_path =  "../obj/" .. sln_name .. "/%{cfg.platform}_%{cfg.buildcfg}"
 solution(sln_name)
-	configurations { "DLL Debug", "DLL Release", "Static Debug", "Static Release" }
+	configurations { "DLL Debug", "DLL Release" }
 	platforms { "x32", "x64" }
   location ("../sln/".. sln_name)
   targetdir "bin"

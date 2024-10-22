@@ -1,3 +1,24 @@
+
+修改的地方查找LTOKENP_T
+主要修改内容：
+lauxlib.c：读取文件改为二进制读取，为了保留回车换行
+LexState结构定义：增加两个变量，用于保存原始字符串和类型
+  int cb_type; /* type of cbuff*/
+  Mbuffer *cbuff;  /* buffer for line break, spaces, comment, string delimited */
+llex.c文件：解析时原始字符串和注释保存在cbuff中
+proxy.c: 增加一个过滤接口函数，用于输出换行、空白、长注释、短注释
+
+
+使用方法:
+ltokenp -s fmtlcode.lua t.lua
+
+受这里启发：
+http://lua-users.org/lists/lua-l/2017-06/msg00095.html
+-------------------------------------------------------------------------
+代码来自：
+from:
+http://www.tecgraf.puc-rio.br/~lhf/ftp/lua/#ltokenp
+
 ltokenp is a token processor for Lua: it allows you to process the stream
 of tokens coming from the Lua lexer.
 
