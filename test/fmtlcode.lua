@@ -1,5 +1,5 @@
 -- format lua code
-local line_feed = "\r\n"
+local line_feed = "\n"
 local keep_line_count = 2    -- 保留空白行个数
 
 local prt_buf =
@@ -259,7 +259,6 @@ local tk_list =
 
 function fmt_calc_allline_indent()
     local ins_stack = {}
-    local incount = 0
     for i = 1, #all_token do
         -- line -- 整数
         -- text -- in tk_list
@@ -380,7 +379,7 @@ end
 
 -- a 是已经输出的token
 -- b 是下一个将要输出的token
-function fmt_emit_space(a1,a0, a, b)
+function fmt_emit_space(a1, a0, a, b)
     if a == nil then
         return ""
     end
@@ -428,7 +427,7 @@ function fmt_emit_space(a1,a0, a, b)
         -- 前一个token是逗号，如 f(x,y)
         return " "
     elseif atext == "::" and (a0 ~= nil and a0.text == "<name>") and (a1 ~= nil and a1.text == "::") then
-    		-- ::xx:: yy = 5, label结束，后面如果有token，则加一个空格
+        -- ::xx:: yy = 5, label结束，后面如果有token，则加一个空格
         return " "
     end
 
@@ -454,6 +453,7 @@ function format_code()
     local token2
     local token1
     local token0
+    local line_break = {}
     fmt_calc_allline_indent()
     for i = 1, #all_token do
         -- line -- integer
@@ -466,10 +466,13 @@ function format_code()
             goto continue
         end
         if text == "<p>" then
+            line_feed = x.value
+            table.insert(line_break, line_feed)
             goto continue
         end
 
         -- 
+        line_break = {}
         token3 = token2
         token2 = token1
         token1 = token0
@@ -499,8 +502,26 @@ function format_code()
 
         ::continue::
     end
+
+    -- 保留文件末尾的空行
+    -- 至少要保留一个空行，因为在格式化选择的代码时，后面可能会有一个空行，这个空行不能删除
+    if keep_line_count == 0 then
+        for i = 1, #line_break do
+            table.insert(ret, line_break[i])
+            break
+        end
+    else
+        for i = 1, #line_break do
+            table.insert(ret, line_break[i])
+            if i > keep_line_count then
+                break
+            end
+        end
+    end
+
+
     local s = table.concat(ret)
-    save_new_file("t_fmtok.lua", s)
+    return s
 end
 
 -- 选项：如果是重新格式化reformat，美化文档，需自动添加换行
@@ -528,7 +549,9 @@ function FILTER(line, token, text, value, ct)
         all_token = {}
     elseif text == "<eof>" then
         init_clash()
-        format_code()
+        local s = format_code()
+        --save_new_file("t_fmtok.lua", s)
+        io.write(s)
     else
         if text == "<integer>" then
             text = "<number>"
@@ -536,3 +559,4 @@ function FILTER(line, token, text, value, ct)
         table.insert(all_token, { line = line, token = token, text = text, value = value, ct = ct } )
     end
 end
+
