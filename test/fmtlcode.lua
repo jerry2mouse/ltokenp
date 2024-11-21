@@ -256,15 +256,26 @@ local tk_list =
     "<number>", "<integer>", "<name>", "<string>",
     "<p>", "<spaces>", "<lcomment>", "<scomment>",
 }
-
+local premake_k = "-- fmt-premake"
+local is_premake = false
+local premake_tk =
+{
+    ["workspace"] = { cur_incount = 0, next_incount = 1 },
+    ["solution"] = { cur_incount = 0, next_incount = 1 },
+    ["project"] = { cur_incount = 0, next_incount = 1 },
+    ["filter"] = { cur_incount = 1, next_incount = 2 },
+    ["configuration "] = { cur_incount = 1, next_incount = 2 },
+}
 function fmt_calc_allline_indent()
     local ins_stack = {}
+    local premake_count = 0
     for i = 1, #all_token do
         -- line -- 整数
         -- text -- in tk_list
         -- line, token, text, value, ct
         local x = all_token[i]
         x.incount = #ins_stack
+        x.premake_count = premake_count
         local text = x.text
         if text == "<lcomment>" or text == "<scomment>" then
             goto continue
@@ -273,6 +284,8 @@ function fmt_calc_allline_indent()
             goto continue
         end
         if text:match("^%l") or text == "{" or text == "}" then
+            -- check indent
+        elseif is_premake == true and premake_tk[x.value] ~= nil then
             -- check indent
         else
             goto continue
@@ -302,6 +315,15 @@ function fmt_calc_allline_indent()
             table.remove(ins_stack)
         end
 
+        -- premake
+        if is_premake == true then
+            local p = premake_tk[x.value]
+            if p ~= nil then
+                x.premake_count = p.cur_incount
+                premake_count = p.next_incount
+            end
+        end
+
         if text == "else" then
             x.incount = x.incount - 1
         elseif text == "elseif" then
@@ -324,6 +346,9 @@ function fmt_calc_indent(t1)
     for i = 1, t1.incount * 4 do
         s = s .. " "
     end
+    for i = 1, t1.premake_count * 4 do
+        s = s .. " "
+    end
     return s
 end
 
@@ -338,6 +363,7 @@ function fmt_emit_val(t1)
         return t1.value
     end
 end
+
 function fmt_emit_linefeed(t0, t1)
     if t0 == nil then
         return ""
@@ -504,7 +530,7 @@ function format_code()
     end
 
     -- 保留文件末尾的空行
-    -- 至少要保留一个空行，因为在格式化选择的代码时，后面可能会有一个空行，这个空行不能删除
+    -- 至少要保留一个空行，因为在格式化选择的代码时，后面可能会有一个空行，这个空行不能删除，删除这个空行会导致后续内容向上移动
     if keep_line_count == 0 then
         for i = 1, #line_break do
             table.insert(ret, line_break[i])
@@ -534,6 +560,9 @@ function FILTER_COMMENT(line, token, text, value, ct)
         --print(string.format("FILTERCMT\tline:%3d\t%s\t'%s'\t%s", line, text, value, output_buf(ct)))
     else
         --print(string.format("FILTERCMT\tline:%3d\t%s\t'%s'", line, text, value))
+    end
+    if is_premake == false and string.find(value, "%-%-%s*fmt%-premake") ~= nil then
+        is_premake = true
     end
     table.insert(all_token, { line = line, token = token, text = text, value = value, ct = ct } )
 end
